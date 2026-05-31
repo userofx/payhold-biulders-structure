@@ -1,0 +1,2371 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PayHold — Architecture & Build Plan</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&family=Instrument+Sans:wght@300;400;500&display=swap"
+        rel="stylesheet">
+
+    <style>
+        /* ═══════════════════════════════════════════════
+   PAYHOLD GLOBAL CSS — DESIGN SYSTEM
+   Africa's Trust Infrastructure Layer
+   ═══════════════════════════════════════════════ */
+
+        :root {
+            /* Core palette */
+            --ink: #060E1C;
+            --ink-card: #0D1B2E;
+            --ink-raised: #112236;
+            --ink-border: rgba(255, 255, 255, .07);
+            --ink-border2: rgba(255, 255, 255, .12);
+
+            /* Brand */
+            --teal: #00D4A0;
+            --teal-dim: rgba(0, 212, 160, .12);
+            --teal-glow: rgba(0, 212, 160, .06);
+
+            /* Accent ramps */
+            --blue: #3B9EFF;
+            --blue-dim: rgba(59, 158, 255, .12);
+            --coral: #F0997B;
+            --coral-dim: rgba(240, 153, 123, .12);
+            --purple: #B77FFF;
+            --purple-dim: rgba(183, 127, 255, .12);
+            --gold: #FFD166;
+            --gold-dim: rgba(255, 209, 102, .12);
+            --red: #E24B4A;
+            --green: #1D9E75;
+
+            /* Text */
+            --text-1: #F0EDE8;
+            --text-2: rgba(240, 237, 232, .6);
+            --text-3: rgba(240, 237, 232, .35);
+
+            /* Type */
+            --font-display: 'Syne', sans-serif;
+            --font-body: 'Instrument Sans', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+
+            /* Layout */
+            --nav-w: 240px;
+            --max-w: 860px;
+            --radius: 10px;
+            --radius-lg: 16px;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background: var(--ink);
+            color: var(--text-1);
+            font-family: var(--font-body);
+            font-size: 15px;
+            line-height: 1.7;
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* ── Scrollbar ── */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--ink-border2);
+            border-radius: 2px;
+        }
+
+        /* ═══════════════════════════════════════════════
+   SIDEBAR NAV
+   ═══════════════════════════════════════════════ */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: var(--nav-w);
+            background: var(--ink-card);
+            border-right: 1px solid var(--ink-border);
+            display: flex;
+            flex-direction: column;
+            padding: 28px 0;
+            z-index: 100;
+            overflow-y: auto;
+        }
+
+        .sidebar-logo {
+            padding: 0 24px 28px;
+            border-bottom: 1px solid var(--ink-border);
+            margin-bottom: 20px;
+        }
+
+        .sidebar-logo .wordmark {
+            font-family: var(--font-display);
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--teal);
+            letter-spacing: -.01em;
+            display: block;
+        }
+
+        .sidebar-logo .tagline {
+            font-size: 10px;
+            color: var(--text-3);
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
+        .nav-section-label {
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--text-3);
+            padding: 12px 24px 6px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 24px;
+            font-size: 13px;
+            color: var(--text-2);
+            text-decoration: none;
+            transition: color .15s, background .15s;
+            cursor: pointer;
+            border-left: 2px solid transparent;
+        }
+
+        .nav-item:hover {
+            color: var(--text-1);
+            background: rgba(255, 255, 255, .03);
+        }
+
+        .nav-item.active {
+            color: var(--teal);
+            border-left-color: var(--teal);
+            background: var(--teal-glow);
+        }
+
+        .nav-item .nav-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+            opacity: .4;
+            flex-shrink: 0;
+        }
+
+        .nav-item.active .nav-dot {
+            opacity: 1;
+        }
+
+        .nav-phase-tag {
+            margin-left: auto;
+            font-size: 10px;
+            padding: 1px 6px;
+            border-radius: 20px;
+            border: 1px solid currentColor;
+            opacity: .5;
+        }
+
+        /* ═══════════════════════════════════════════════
+   MAIN CONTENT
+   ═══════════════════════════════════════════════ */
+        .main {
+            margin-left: var(--nav-w);
+            flex: 1;
+            min-height: 100vh;
+        }
+
+        .content {
+            max-width: var(--max-w);
+            margin: 0 auto;
+            padding: 64px 48px 120px;
+        }
+
+        /* ═══════════════════════════════════════════════
+   SECTION SYSTEM
+   ═══════════════════════════════════════════════ */
+        .section {
+            padding-top: 80px;
+            border-top: 1px solid var(--ink-border);
+            margin-top: 80px;
+        }
+
+        .section:first-child {
+            border-top: none;
+            margin-top: 0;
+            padding-top: 0;
+        }
+
+        .section-eyebrow {
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            color: var(--teal);
+            margin-bottom: 10px;
+        }
+
+        .section-title {
+            font-family: var(--font-display);
+            font-size: 38px;
+            font-weight: 800;
+            line-height: 1.08;
+            letter-spacing: -.02em;
+            color: var(--text-1);
+            margin-bottom: 16px;
+        }
+
+        .section-title span {
+            color: var(--teal);
+        }
+
+        .section-lead {
+            font-size: 16px;
+            color: var(--text-2);
+            line-height: 1.7;
+            max-width: 640px;
+            margin-bottom: 40px;
+        }
+
+        .h2 {
+            font-family: var(--font-display);
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-1);
+            margin: 40px 0 12px;
+            letter-spacing: -.01em;
+        }
+
+        .h3 {
+            font-family: var(--font-display);
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-1);
+            margin: 24px 0 8px;
+        }
+
+        p {
+            color: var(--text-2);
+            margin-bottom: 14px;
+        }
+
+        p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* ═══════════════════════════════════════════════
+   HERO
+   ═══════════════════════════════════════════════ */
+        .hero {
+            min-height: 56vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding-bottom: 56px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 600px 400px at 80% -10%, rgba(0, 212, 160, .06) 0%, transparent 70%),
+                radial-gradient(ellipse 400px 300px at -10% 80%, rgba(59, 158, 255, .04) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .hero-label {
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--teal);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .hero-label::before {
+            content: '';
+            width: 24px;
+            height: 1px;
+            background: var(--teal);
+        }
+
+        .hero-title {
+            font-family: var(--font-display);
+            font-size: clamp(42px, 6vw, 68px);
+            font-weight: 800;
+            line-height: 1.0;
+            letter-spacing: -.03em;
+            color: var(--text-1);
+            margin-bottom: 24px;
+        }
+
+        .hero-title .accent {
+            color: var(--teal);
+        }
+
+        .hero-title .dim {
+            color: var(--text-3);
+        }
+
+        .hero-sub {
+            font-size: 17px;
+            color: var(--text-2);
+            max-width: 520px;
+            line-height: 1.65;
+            margin-bottom: 36px;
+        }
+
+        .hero-meta {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        .hero-stat {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .hero-stat .num {
+            font-family: var(--font-display);
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--teal);
+        }
+
+        .hero-stat .lbl {
+            font-size: 11px;
+            color: var(--text-3);
+            text-transform: uppercase;
+            letter-spacing: .08em;
+        }
+
+        /* ═══════════════════════════════════════════════
+   CARDS & GRIDS
+   ═══════════════════════════════════════════════ */
+        .card {
+            background: var(--ink-card);
+            border: 1px solid var(--ink-border);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            transition: border-color .2s;
+        }
+
+        .card:hover {
+            border-color: var(--ink-border2);
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .card-grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .card-label {
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--text-3);
+            margin-bottom: 8px;
+        }
+
+        .card-title {
+            font-family: var(--font-display);
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-1);
+            margin-bottom: 6px;
+            letter-spacing: -.01em;
+        }
+
+        .card-body {
+            font-size: 13px;
+            color: var(--text-2);
+            line-height: 1.6;
+        }
+
+        /* ═══════════════════════════════════════════════
+   PHASE CARDS
+   ═══════════════════════════════════════════════ */
+        .phase-strip {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            margin-bottom: 32px;
+        }
+
+        .phase-card {
+            background: var(--ink-card);
+            border: 1px solid var(--ink-border);
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            display: grid;
+            grid-template-columns: 48px 1fr auto;
+            align-items: center;
+            gap: 20px;
+            cursor: pointer;
+            transition: background .15s, border-color .15s;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .phase-card:hover {
+            background: var(--ink-raised);
+            border-color: var(--ink-border2);
+        }
+
+        .phase-card.active {
+            border-color: var(--phase-color, var(--teal));
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, .2) 100%);
+        }
+
+        .phase-num-badge {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            background: var(--phase-dim, var(--teal-dim));
+            border: 1px solid var(--phase-color, var(--teal));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-display);
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--phase-color, var(--teal));
+            flex-shrink: 0;
+        }
+
+        .phase-info .name {
+            font-family: var(--font-display);
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-1);
+            margin-bottom: 2px;
+        }
+
+        .phase-info .desc {
+            font-size: 13px;
+            color: var(--text-2);
+        }
+
+        .phase-tag {
+            font-size: 10px;
+            font-weight: 500;
+            padding: 3px 10px;
+            border-radius: 20px;
+            border: 1px solid var(--phase-color, var(--teal));
+            color: var(--phase-color, var(--teal));
+            white-space: nowrap;
+            opacity: .8;
+        }
+
+        /* ═══════════════════════════════════════════════
+   STATE MACHINE
+   ═══════════════════════════════════════════════ */
+        .states-flow {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 24px;
+            align-items: center;
+        }
+
+        .state-pill {
+            font-size: 12px;
+            font-weight: 500;
+            font-family: var(--font-mono);
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: 1px solid var(--ink-border2);
+            background: var(--ink-card);
+            color: var(--text-2);
+            cursor: pointer;
+            transition: all .15s;
+            white-space: nowrap;
+        }
+
+        .state-pill:hover {
+            border-color: var(--state-color, var(--teal));
+            color: var(--text-1);
+        }
+
+        .state-pill.active {
+            background: var(--state-dim, var(--teal-dim));
+            border-color: var(--state-color, var(--teal));
+            color: var(--state-color, var(--teal));
+        }
+
+        .state-arrow {
+            color: var(--text-3);
+            font-size: 14px;
+        }
+
+        .state-detail {
+            background: var(--ink-card);
+            border: 1px solid var(--ink-border);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            min-height: 120px;
+            transition: border-color .2s;
+        }
+
+        .state-detail .state-name {
+            font-family: var(--font-display);
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .state-meta-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .state-meta-item .lbl {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: var(--text-3);
+            margin-bottom: 4px;
+        }
+
+        .state-meta-item .val {
+            font-size: 13px;
+            font-family: var(--font-mono);
+            color: var(--teal);
+        }
+
+        .state-desc {
+            font-size: 14px;
+            color: var(--text-2);
+            line-height: 1.65;
+        }
+
+        /* ═══════════════════════════════════════════════
+   SERVICE LAYER
+   ═══════════════════════════════════════════════ */
+        .service-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .service-card {
+            background: var(--ink-card);
+            border: 1px solid var(--ink-border);
+            border-radius: var(--radius);
+            padding: 16px 18px;
+            border-left: 2px solid var(--svc-color, var(--teal));
+            transition: background .15s;
+        }
+
+        .service-card:hover {
+            background: var(--ink-raised);
+        }
+
+        .service-name {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-1);
+            margin-bottom: 3px;
+        }
+
+        .service-desc {
+            font-size: 12px;
+            color: var(--text-3);
+        }
+
+        /* ═══════════════════════════════════════════════
+   CODE BLOCKS
+   ═══════════════════════════════════════════════ */
+        .code-block {
+            background: rgba(0, 0, 0, .4);
+            border: 1px solid var(--ink-border);
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            line-height: 1.65;
+            overflow-x: auto;
+            margin-bottom: 20px;
+            color: var(--text-2);
+        }
+
+        .code-block .cm {
+            color: var(--text-3);
+            font-style: italic;
+        }
+
+        .code-block .ck {
+            color: var(--purple);
+        }
+
+        .code-block .cs {
+            color: var(--teal);
+        }
+
+        .code-block .cn {
+            color: var(--coral);
+        }
+
+        .code-block .cv {
+            color: var(--gold);
+        }
+
+        .file-tree {
+            background: rgba(0, 0, 0, .4);
+            border: 1px solid var(--ink-border);
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            line-height: 1.9;
+            margin-bottom: 20px;
+        }
+
+        .ft-dir {
+            color: var(--blue);
+        }
+
+        .ft-file {
+            color: var(--text-2);
+        }
+
+        .ft-comment {
+            color: var(--text-3);
+        }
+
+        .ft-new {
+            color: var(--teal);
+        }
+
+        /* ═══════════════════════════════════════════════
+   TABLES
+   ═══════════════════════════════════════════════ */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin-bottom: 24px;
+        }
+
+        th {
+            text-align: left;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--text-3);
+            padding: 8px 16px;
+            border-bottom: 1px solid var(--ink-border);
+        }
+
+        td {
+            padding: 12px 16px;
+            color: var(--text-2);
+            border-bottom: 1px solid var(--ink-border);
+            vertical-align: top;
+            line-height: 1.5;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, .02);
+        }
+
+        td .tag {
+            font-size: 11px;
+            font-family: var(--font-mono);
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: var(--teal-dim);
+            color: var(--teal);
+        }
+
+        /* ═══════════════════════════════════════════════
+   CALLOUTS
+   ═══════════════════════════════════════════════ */
+        .callout {
+            border-radius: var(--radius);
+            padding: 18px 20px;
+            margin-bottom: 20px;
+            border-left: 3px solid;
+            font-size: 14px;
+            line-height: 1.65;
+        }
+
+        .callout.insight {
+            background: var(--teal-glow);
+            border-color: var(--teal);
+            color: var(--text-2);
+        }
+
+        .callout.warning {
+            background: rgba(255, 209, 102, .05);
+            border-color: var(--gold);
+            color: var(--text-2);
+        }
+
+        .callout.danger {
+            background: rgba(226, 75, 74, .05);
+            border-color: var(--red);
+            color: var(--text-2);
+        }
+
+        .callout strong {
+            color: var(--text-1);
+            font-weight: 500;
+        }
+
+        /* ═══════════════════════════════════════════════
+   MOAT CARDS
+   ═══════════════════════════════════════════════ */
+        .moat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+
+        .moat-card {
+            background: var(--ink-card);
+            border: 1px solid var(--ink-border);
+            border-radius: var(--radius);
+            padding: 20px;
+        }
+
+        .moat-card .moat-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-1);
+            margin-bottom: 6px;
+        }
+
+        .moat-card .moat-body {
+            font-size: 12px;
+            color: var(--text-2);
+            line-height: 1.6;
+        }
+
+        /* ═══════════════════════════════════════════════
+   TIMELINE / MILESTONES
+   ═══════════════════════════════════════════════ */
+        .timeline {
+            position: relative;
+            padding-left: 24px;
+            margin-bottom: 32px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 7px;
+            top: 8px;
+            bottom: 8px;
+            width: 1px;
+            background: var(--ink-border2);
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-bottom: 28px;
+        }
+
+        .timeline-item:last-child {
+            padding-bottom: 0;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -20px;
+            top: 8px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--tl-color, var(--teal));
+            border: 2px solid var(--ink);
+        }
+
+        .timeline-item .tl-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: .1em;
+            color: var(--tl-color, var(--teal));
+            margin-bottom: 4px;
+        }
+
+        .timeline-item .tl-title {
+            font-family: var(--font-display);
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-1);
+            margin-bottom: 6px;
+        }
+
+        .timeline-item .tl-body {
+            font-size: 13px;
+            color: var(--text-2);
+            line-height: 1.6;
+        }
+
+        /* ═══════════════════════════════════════════════
+   CHIPS / BADGES
+   ═══════════════════════════════════════════════ */
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            font-weight: 500;
+            padding: 3px 10px;
+            border-radius: 20px;
+            border: 1px solid var(--ink-border2);
+            color: var(--text-2);
+            white-space: nowrap;
+        }
+
+        .chip.teal {
+            border-color: var(--teal);
+            color: var(--teal);
+            background: var(--teal-dim);
+        }
+
+        .chip.blue {
+            border-color: var(--blue);
+            color: var(--blue);
+            background: var(--blue-dim);
+        }
+
+        .chip.coral {
+            border-color: var(--coral);
+            color: var(--coral);
+            background: var(--coral-dim);
+        }
+
+        .chip.purple {
+            border-color: var(--purple);
+            color: var(--purple);
+            background: var(--purple-dim);
+        }
+
+        .chip.gold {
+            border-color: var(--gold);
+            color: var(--gold);
+            background: var(--gold-dim);
+        }
+
+        .chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 20px;
+        }
+
+        /* ═══════════════════════════════════════════════
+   FLYWHEEL DIAGRAM
+   ═══════════════════════════════════════════════ */
+        .flywheel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2px;
+            background: var(--ink-border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+
+        .fw-cell {
+            background: var(--ink-card);
+            padding: 24px;
+            transition: background .15s;
+        }
+
+        .fw-cell:hover {
+            background: var(--ink-raised);
+        }
+
+        .fw-cell .fw-num {
+            font-family: var(--font-display);
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--teal);
+            opacity: .2;
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+
+        .fw-cell .fw-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-1);
+            margin-bottom: 4px;
+        }
+
+        .fw-cell .fw-body {
+            font-size: 13px;
+            color: var(--text-2);
+            line-height: 1.55;
+        }
+
+        .fw-arrow-center {
+            grid-column: 1/-1;
+            background: var(--ink-card);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            font-size: 18px;
+            color: var(--teal);
+        }
+
+        /* ═══════════════════════════════════════════════
+   LAYER STACK DIAGRAM
+   ═══════════════════════════════════════════════ */
+        .layer-stack {
+            margin-bottom: 24px;
+        }
+
+        .layer {
+            border-radius: 6px;
+            padding: 14px 20px;
+            margin-bottom: 3px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            border: 1px solid transparent;
+            transition: border-color .15s;
+        }
+
+        .layer:hover {
+            border-color: var(--ink-border2);
+        }
+
+        .layer-name {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-1);
+            min-width: 140px;
+        }
+
+        .layer-items {
+            font-size: 12px;
+            color: var(--text-2);
+            font-family: var(--font-mono);
+        }
+
+        .layer-items span {
+            background: rgba(255, 255, 255, .05);
+            border-radius: 4px;
+            padding: 2px 8px;
+            margin-right: 6px;
+            display: inline-block;
+            margin-bottom: 4px;
+        }
+
+        /* ═══════════════════════════════════════════════
+   PROGRESS INDICATOR
+   ═══════════════════════════════════════════════ */
+        .progress-bar {
+            height: 3px;
+            background: var(--ink-border);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 6px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 2px;
+            background: var(--teal);
+            transition: width .4s;
+        }
+
+        /* ═══════════════════════════════════════════════
+   DECISION TABLE
+   ═══════════════════════════════════════════════ */
+        .decision-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--ink-border);
+        }
+
+        .decision-row:last-child {
+            border-bottom: none;
+        }
+
+        .decision-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .decision-icon.yes {
+            background: rgba(29, 158, 117, .2);
+            color: var(--green);
+        }
+
+        .decision-icon.no {
+            background: rgba(226, 75, 74, .15);
+            color: var(--red);
+        }
+
+        .decision-icon.warn {
+            background: rgba(255, 209, 102, .15);
+            color: var(--gold);
+        }
+
+        .decision-text {
+            font-size: 13px;
+            color: var(--text-2);
+            line-height: 1.55;
+        }
+
+        .decision-text strong {
+            color: var(--text-1);
+            font-weight: 500;
+        }
+
+        /* ═══════════════════════════════════════════════
+   SCROLL PROGRESS
+   ═══════════════════════════════════════════════ */
+        .scroll-progress {
+            position: fixed;
+            top: 0;
+            left: var(--nav-w);
+            right: 0;
+            height: 2px;
+            background: var(--ink-border);
+            z-index: 200;
+        }
+
+        .scroll-progress-fill {
+            height: 100%;
+            background: var(--teal);
+            width: 0%;
+            transition: width .1s;
+        }
+
+        /* ═══════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════ */
+        @media (max-width: 900px) {
+            :root {
+                --nav-w: 0px;
+            }
+
+            .sidebar {
+                transform: translateX(-240px);
+                transition: transform .3s;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+                --nav-w: 240px;
+            }
+
+            .card-grid-3 {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .content {
+                padding: 40px 24px 80px;
+            }
+
+            .section-title {
+                font-size: 28px;
+            }
+
+            .flywheel {
+                grid-template-columns: 1fr;
+            }
+
+            .state-meta-row {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        /* ═══════════════════════════════════════════════
+   ANIMATIONS
+   ═══════════════════════════════════════════════ */
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-up {
+            animation: fadeUp .5s ease both;
+        }
+
+        .fade-up-1 {
+            animation-delay: .1s;
+        }
+
+        .fade-up-2 {
+            animation-delay: .2s;
+        }
+
+        .fade-up-3 {
+            animation-delay: .3s;
+        }
+
+        /* ═══════════════════════════════════════════════
+   PRINT
+   ═══════════════════════════════════════════════ */
+        @media print {
+            .sidebar {
+                display: none;
+            }
+
+            .main {
+                margin-left: 0;
+            }
+
+            .scroll-progress {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Scroll progress -->
+    <div class="scroll-progress">
+        <div class="scroll-progress-fill" id="spfill"></div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════
+     SIDEBAR
+     ═══════════════════════════════════════════════ -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+            <span class="wordmark">PayHold</span>
+            <span class="tagline">Architecture & Build Plan</span>
+        </div>
+
+        <span class="nav-section-label">Overview</span>
+        <a class="nav-item active" href="#vision"><span class="nav-dot"></span>Vision & mission</a>
+        <a class="nav-item" href="#philosophy"><span class="nav-dot"></span>Core philosophy</a>
+        <a class="nav-item" href="#problem"><span class="nav-dot"></span>The trust gaps</a>
+        <a class="nav-item" href="#flywheel"><span class="nav-dot"></span>Network flywheel</a>
+        <a class="nav-item" href="#moats"><span class="nav-dot"></span>Competitive moats</a>
+
+        <span class="nav-section-label">Phases</span>
+        <a class="nav-item" href="#phase1"><span class="nav-dot" style="background:var(--teal)"></span>Phase 1 —
+            Escrow<span class="nav-phase-tag" style="color:var(--teal);border-color:var(--teal)">Now</span></a>
+        <a class="nav-item" href="#phase2"><span class="nav-dot" style="background:var(--blue)"></span>Phase 2 —
+            Dispatcher</a>
+        <a class="nav-item" href="#phase3"><span class="nav-dot" style="background:var(--coral)"></span>Phase 3 — Real
+            estate</a>
+        <a class="nav-item" href="#phase4"><span class="nav-dot" style="background:var(--purple)"></span>Phase 4 —
+            Vaults</a>
+        <a class="nav-item" href="#phase5"><span class="nav-dot" style="background:var(--gold)"></span>Phase 5 —
+            APIs</a>
+        <a class="nav-item" href="#phase6"><span class="nav-dot" style="background:var(--teal)"></span>Phase 6 — Trust
+            OS</a>
+
+        <span class="nav-section-label">State machine</span>
+        <a class="nav-item" href="#statemachine"><span class="nav-dot"></span>12-state kernel</a>
+        <a class="nav-item" href="#dispatcher"><span class="nav-dot"></span>Hold window logic</a>
+
+        <span class="nav-section-label">Architecture</span>
+        <a class="nav-item" href="#layers"><span class="nav-dot"></span>System layers</a>
+        <a class="nav-item" href="#services"><span class="nav-dot"></span>Service layer</a>
+        <a class="nav-item" href="#datamodel"><span class="nav-dot"></span>Data model</a>
+        <a class="nav-item" href="#backend"><span class="nav-dot"></span>Backend structure</a>
+        <a class="nav-item" href="#reputation"><span class="nav-dot"></span>Reputation system</a>
+
+        <span class="nav-section-label">Build plan</span>
+        <a class="nav-item" href="#roadmap"><span class="nav-dot"></span>Roadmap</a>
+        <a class="nav-item" href="#decisions"><span class="nav-dot"></span>Key decisions</a>
+        <a class="nav-item" href="#stack"><span class="nav-dot"></span>Tech stack</a>
+    </nav>
+
+    <!-- ═══════════════════════════════════════════════
+     MAIN
+     ═══════════════════════════════════════════════ -->
+    <main class="main">
+        <div class="content">
+
+            <!-- HERO -->
+            <section class="hero" id="hero">
+                <div class="hero-label">Internal architecture document — v1.0</div>
+                <h1 class="hero-title fade-up">
+                    Africa's<br>
+                    <span class="accent">trust</span><br>
+                    <span class="dim">infrastructure.</span>
+                </h1>
+                <p class="hero-sub fade-up fade-up-1">
+                    PayHold is not an escrow app. It is the programmable trust layer for African commerce — from payment
+                    escrow to dispatcher networks, real estate, vaults, and beyond.
+                </p>
+                <div class="hero-meta fade-up fade-up-2">
+                    <div class="hero-stat"><span class="num">6</span><span class="lbl">Build phases</span></div>
+                    <div class="hero-stat"><span class="num">12</span><span class="lbl">Transaction states</span></div>
+                    <div class="hero-stat"><span class="num">10+</span><span class="lbl">Core services</span></div>
+                    <div class="hero-stat"><span class="num">∞</span><span class="lbl">Trust potential</span></div>
+                </div>
+            </section>
+
+            <!-- VISION -->
+            <section class="section" id="vision">
+                <div class="section-eyebrow">Mission</div>
+                <h2 class="section-title">Convert trust from a<br>human process into <span>programmable
+                        infrastructure.</span></h2>
+                <p class="section-lead">The first implementation is escrow. Escrow is not the destination — it is the
+                    trust kernel. The long-term vision is to become the infrastructure layer that sits between people,
+                    assets, money, logistics, and agreements across Africa.</p>
+
+                <div class="callout insight">
+                    <strong>The frame that matters:</strong> Think Stripe for payments — they started with 7 lines of
+                    JavaScript and became the payment infrastructure layer for the internet. PayHold starts with one
+                    escrow primitive and becomes the trust infrastructure layer for African commerce. Same trajectory,
+                    different continent, higher stakes.
+                </div>
+
+                <div class="card-grid">
+                    <div class="card">
+                        <div class="card-label">Steve Jobs thinking</div>
+                        <div class="card-title">Start with emotion</div>
+                        <div class="card-body">Start with behaviour. Start with the user's fear. Hide complexity. Make
+                            trust feel simple and inevitable.</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-label">Bill Gates thinking</div>
+                        <div class="card-title">Build protocols first</div>
+                        <div class="card-body">Build infrastructure before UI. Build systems before marketing. Design
+                            for scale from day one. Create primitives others build upon.</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-label">African reality</div>
+                        <div class="card-title">Mobile-first, trust-first</div>
+                        <div class="card-body">Africa does not need to copy Western fintech. It needs infrastructure
+                            built for African realities — mobile-first, low-data, multi-language, high-scam-risk
+                            environment.</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PROBLEM -->
+            <section class="section" id="problem">
+                <div class="section-eyebrow">The problem</div>
+                <h2 class="section-title">Four trust gaps <span>killing African commerce.</span></h2>
+                <p class="section-lead">Every failed transaction in Africa comes back to one of four categories. PayHold
+                    is systematically designed to close all four.</p>
+
+                <div class="card-grid">
+                    <div class="card">
+                        <div class="card-label">Gap 1</div>
+                        <div class="card-title" style="color:var(--coral)">Payment risk</div>
+                        <div class="card-body">Buyer pays and never receives goods. Seller ships and never receives
+                            payment. This is the default assumption in Nigerian e-commerce.</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-label">Gap 2</div>
+                        <div class="card-title" style="color:var(--blue)">Logistics risk</div>
+                        <div class="card-body">Goods are damaged. Deliveries disappear. Tracking is unreliable. No
+                            accountable chain of custody exists.</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-label">Gap 3</div>
+                        <div class="card-title" style="color:var(--purple)">Identity risk</div>
+                        <div class="card-body">Counterparties are unknown. Reputation systems are weak or nonexistent.
+                            Anyone can be anyone online.</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-label">Gap 4</div>
+                        <div class="card-title" style="color:var(--gold)">Asset transfer risk</div>
+                        <div class="card-body">Real estate. Vehicles. High-value goods. Future inheritance. Massive
+                            asset transfers happen with no neutral infrastructure.</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- FLYWHEEL -->
+            <section class="section" id="flywheel">
+                <div class="section-eyebrow">Growth engine</div>
+                <h2 class="section-title">The network <span>flywheel.</span></h2>
+                <p class="section-lead">Every new user makes the system better for every existing user. This compounding
+                    loop is what makes PayHold defensible at scale.</p>
+
+                <div class="flywheel">
+                    <div class="fw-cell">
+                        <div class="fw-num">01</div>
+                        <div class="fw-title">More buyers and sellers</div>
+                        <div class="fw-body">Every new user adds transaction volume. Volume generates reputation data.
+                            Reputation makes the platform safer. Safety attracts more users.</div>
+                    </div>
+                    <div class="fw-cell">
+                        <div class="fw-num">02</div>
+                        <div class="fw-title">More dispatcher routes</div>
+                        <div class="fw-body">More transactions mean more delivery jobs. More jobs attract dispatchers.
+                            More dispatchers mean better coverage and cheaper delivery.</div>
+                    </div>
+                    <div class="fw-cell">
+                        <div class="fw-num">03</div>
+                        <div class="fw-title">Stronger reputation data</div>
+                        <div class="fw-body">Every completed transaction scores buyers, sellers, and dispatchers. Better
+                            scores improve matching. Fewer disputes build brand trust.</div>
+                    </div>
+                    <div class="fw-cell">
+                        <div class="fw-num">04</div>
+                        <div class="fw-title">Trust becomes infrastructure</div>
+                        <div class="fw-body">Businesses embed PayHold via API. Banks reference reputation scores.
+                            Regulators recognise PayHold as a licensed trust agent.</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MOATS -->
+            <section class="section" id="moats">
+                <div class="section-eyebrow">Defensibility</div>
+                <h2 class="section-title">Six moats that compound <span>over time.</span></h2>
+
+                <div class="moat-grid">
+                    <div class="moat-card">
+                        <div class="moat-title">Transaction audit trail</div>
+                        <div class="moat-body">Every state transition is immutable. Years of data become a fraud
+                            detection engine no competitor can replicate quickly.</div>
+                    </div>
+                    <div class="moat-card">
+                        <div class="moat-title">Reputation network</div>
+                        <div class="moat-body">Buyer, seller, and dispatcher scores compound over time. A new entrant
+                            starts with zero data — PayHold starts with millions of data points.</div>
+                    </div>
+                    <div class="moat-card">
+                        <div class="moat-title">Route liquidity data</div>
+                        <div class="moat-body">The dispatcher network accumulates movement patterns across cities. This
+                            becomes a logistics intelligence layer worth more than delivery revenue itself.</div>
+                    </div>
+                    <div class="moat-card">
+                        <div class="moat-title">Regulatory positioning</div>
+                        <div class="moat-body">First licensed escrow agent operating at scale in Nigeria positions
+                            PayHold to define the category before regulators write the rules.</div>
+                    </div>
+                    <div class="moat-card">
+                        <div class="moat-title">Trust brand</div>
+                        <div class="moat-body">In a market where scam is the default assumption, being known as "the
+                            safe way to pay" compounds with every successful transaction.</div>
+                    </div>
+                    <div class="moat-card">
+                        <div class="moat-title">API switching costs</div>
+                        <div class="moat-body">Once a business embeds PayHold escrow into their checkout flow, switching
+                            costs are enormous. The escrow layer becomes load-bearing infrastructure.</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PHASES -->
+            <section class="section" id="phases">
+                <div class="section-eyebrow">Build phases</div>
+                <h2 class="section-title">Six phases from <span>escrow to trust OS.</span></h2>
+                <p class="section-lead">Sequence discipline is everything. Each phase must be stable before the next
+                    begins. The kernel must be unbreakable first.</p>
+
+                <div class="phase-strip">
+
+                    <div class="phase-card" id="phase1" style="--phase-color:var(--teal);--phase-dim:var(--teal-dim)">
+                        <div class="phase-num-badge">P1</div>
+                        <div class="phase-info">
+                            <div class="name">Escrow kernel</div>
+                            <div class="desc">The trust primitive — buyer pays, PayHold holds, seller ships, buyer
+                                confirms, funds release. Build this unbreakably before anything else.</div>
+                        </div>
+                        <div class="phase-tag">Build now</div>
+                    </div>
+
+                    <div class="phase-card" id="phase2" style="--phase-color:var(--blue);--phase-dim:var(--blue-dim)">
+                        <div class="phase-num-badge" style="--phase-color:var(--blue);--phase-dim:var(--blue-dim)">P2
+                        </div>
+                        <div class="phase-info">
+                            <div class="name">Dispatcher network</div>
+                            <div class="desc">Movement marketplace — "find movement, attach package." Monetise existing
+                                city movement. The 45-minute hold window optimises route liquidity before committing to
+                                a match.</div>
+                        </div>
+                        <div class="phase-tag" style="--phase-color:var(--blue)">Next</div>
+                    </div>
+
+                    <div class="phase-card" id="phase3" style="--phase-color:var(--coral);--phase-dim:var(--coral-dim)">
+                        <div class="phase-num-badge" style="--phase-color:var(--coral);--phase-dim:var(--coral-dim)">P3
+                        </div>
+                        <div class="phase-info">
+                            <div class="name">Real estate escrow</div>
+                            <div class="desc">Property trust engine — hold funds, coordinate inspections, verify
+                                ownership transfer, release in milestones. Not a listings site. Conditional release
+                                infrastructure.</div>
+                        </div>
+                        <div class="phase-tag" style="--phase-color:var(--coral)">Year 2</div>
+                    </div>
+
+                    <div class="phase-card" id="phase4"
+                        style="--phase-color:var(--purple);--phase-dim:var(--purple-dim)">
+                        <div class="phase-num-badge" style="--phase-color:var(--purple);--phase-dim:var(--purple-dim)">
+                            P4</div>
+                        <div class="phase-info">
+                            <div class="name">PayHold vaults</div>
+                            <div class="desc">Escrow applied to time — inheritance transfers, education savings, family
+                                trusts, time-locked founder equity. Programmable custody on fiat without blockchain
+                                complexity.</div>
+                        </div>
+                        <div class="phase-tag" style="--phase-color:var(--purple)">Year 2–3</div>
+                    </div>
+
+                    <div class="phase-card" id="phase5" style="--phase-color:var(--gold);--phase-dim:var(--gold-dim)">
+                        <div class="phase-num-badge" style="--phase-color:var(--gold);--phase-dim:var(--gold-dim)">P5
+                        </div>
+                        <div class="phase-info">
+                            <div class="name">Business APIs</div>
+                            <div class="desc">Trust primitive as a product — other companies embed PayHold escrow via
+                                API. Stripe for payments, PayHold for trust. API adoption creates deep switching costs.
+                            </div>
+                        </div>
+                        <div class="phase-tag" style="--phase-color:var(--gold)">Year 3</div>
+                    </div>
+
+                    <div class="phase-card" id="phase6" style="--phase-color:var(--teal);--phase-dim:var(--teal-dim)">
+                        <div class="phase-num-badge">P6</div>
+                        <div class="phase-info">
+                            <div class="name">Trust-as-a-Service</div>
+                            <div class="desc">The endgame — every transaction, asset transfer, and agreement that
+                                requires a trusted third party runs through PayHold infrastructure. The OS for African
+                                commerce.</div>
+                        </div>
+                        <div class="phase-tag">Year 4+</div>
+                    </div>
+
+                </div>
+
+                <div class="callout warning">
+                    <strong>Sequence discipline:</strong> The dispatcher network (Phase 2) requires route density. Route
+                    density requires transaction volume. Transaction volume requires Phase 1 to be solid. Design the
+                    data model to support all phases from day one, but build in strict sequence.
+                </div>
+            </section>
+
+            <!-- STATE MACHINE -->
+            <section class="section" id="statemachine">
+                <div class="section-eyebrow">Trust kernel</div>
+                <h2 class="section-title">The 12-state <span>transaction machine.</span></h2>
+                <p class="section-lead">Every transaction exists in exactly one state at all times. Every transition is
+                    auditable, timestamped, and generates events. State integrity can never be bypassed.</p>
+
+                <div class="states-flow" id="states-flow">
+                    <span class="state-pill active"
+                        style="--state-color:var(--text-3);--state-dim:rgba(255,255,255,.05)"
+                        onclick="showState(0)">Created</span>
+                    <span class="state-arrow">→</span>
+                    <span class="state-pill" style="--state-color:var(--teal)" onclick="showState(1)">Funded</span>
+                    <span class="state-arrow">→</span>
+                    <span class="state-pill" style="--state-color:var(--blue)" onclick="showState(2)">Matching</span>
+                    <span class="state-arrow">→</span>
+                    <span class="state-pill" style="--state-color:var(--blue)" onclick="showState(3)">Assigned</span>
+                    <span class="state-arrow">→</span>
+                    <span class="state-pill" style="--state-color:var(--gold)" onclick="showState(4)">Picked up</span>
+                    <span class="state-arrow">→</span>
+                    <span class="state-pill" style="--state-color:var(--gold)" onclick="showState(5)">In transit</span>
+                    <span class="state-arrow">→</span>
+                    <span class="state-pill" style="--state-color:var(--gold)" onclick="showState(6)">Arrived</span>
+                    <span class="state-arrow">→</span>
+                    <span class="state-pill" style="--state-color:var(--teal)" onclick="showState(7)">Confirmed</span>
+                    <span class="state-arrow">→</span>
+                    <span class="state-pill" style="--state-color:var(--green)" onclick="showState(8)">Released</span>
+                </div>
+
+                <div class="chips">
+                    <span class="chip coral" onclick="showState(9)" style="cursor:pointer">Disputed</span>
+                    <span class="chip" onclick="showState(10)"
+                        style="cursor:pointer;--state-color:var(--coral)">Cancelled</span>
+                    <span class="chip" onclick="showState(11)" style="cursor:pointer">Expired</span>
+                </div>
+
+                <div class="state-detail" id="state-detail">
+                    <div class="state-name" id="sd-name">Created</div>
+                    <div class="state-meta-row">
+                        <div class="state-meta-item">
+                            <div class="lbl">Triggered by</div>
+                            <div class="val" id="sd-trigger">—</div>
+                        </div>
+                        <div class="state-meta-item">
+                            <div class="lbl">Can move to</div>
+                            <div class="val" id="sd-next">—</div>
+                        </div>
+                        <div class="state-meta-item">
+                            <div class="lbl">Event emitted</div>
+                            <div class="val" id="sd-event">—</div>
+                        </div>
+                    </div>
+                    <div class="state-desc" id="sd-desc">Agreement exists in the database. No money has moved yet. The
+                        45-minute expiry clock starts here if the buyer does not fund. PayHold does not commit resources
+                        until Funded.</div>
+                </div>
+
+                <div class="callout insight" style="margin-top:20px">
+                    <strong>Implementation rule:</strong> The state machine lives in
+                    <code>src/services/escrow/stateMachine.ts</code>. No controller, route, or webhook handler may
+                    change transaction state directly — they must call the state machine which validates the transition,
+                    logs the audit event, and emits the domain event.
+                </div>
+            </section>
+
+            <!-- DISPATCHER HOLD WINDOW -->
+            <section class="section" id="dispatcher">
+                <div class="section-eyebrow">Phase 2 deep-dive</div>
+                <h2 class="section-title">The 45-minute <span>hold window.</span></h2>
+                <p class="section-lead">This is infrastructure logic, not UI logic. When a package is created, the
+                    system does not immediately assign the nearest dispatcher. It waits and optimises.</p>
+
+                <div class="callout insight">
+                    <strong>The core insight:</strong> Traditional logistics finds a rider then delivers a package.
+                    PayHold finds movement already happening and attaches a package to it. A driver going from the
+                    airport to town earns for a delivery along that route without changing their plans.
+                </div>
+
+                <div class="h2">How the hold window works</div>
+
+                <div class="timeline">
+                    <div class="timeline-item" style="--tl-color:var(--teal)">
+                        <div class="tl-label">T = 0:00</div>
+                        <div class="tl-title">Package created, hold window opens</div>
+                        <div class="tl-body">Transaction moves to <code>MATCHING_DISPATCHER</code> state. Redis sets a
+                            45-minute TTL key. The scoring engine begins evaluating nearby dispatchers every 90 seconds.
+                        </div>
+                    </div>
+                    <div class="timeline-item" style="--tl-color:var(--blue)">
+                        <div class="tl-label">T = 0:00 – 44:00</div>
+                        <div class="tl-title">Scoring loop runs every 90 seconds</div>
+                        <div class="tl-body">Each dispatcher is scored on: route overlap % (35%), reputation score
+                            (25%), ETA to pickup (25%), acceptance rate history (15%). Best scorer is the candidate but
+                            not yet assigned — the loop keeps watching for a better match.</div>
+                    </div>
+                    <div class="timeline-item" style="--tl-color:var(--gold)">
+                        <div class="tl-label">T = 44:00</div>
+                        <div class="tl-title">Assignment or escalation</div>
+                        <div class="tl-body">If a candidate scores above threshold → assign immediately. If no candidate
+                            meets threshold → escalate to manual pool or extend window by 15 minutes (once only).</div>
+                    </div>
+                    <div class="timeline-item" style="--tl-color:var(--green)">
+                        <div class="tl-label">T = 45:00</div>
+                        <div class="tl-title">Hard assignment</div>
+                        <div class="tl-body">Best available dispatcher is assigned. If no dispatcher exists at all →
+                            transaction moves to <code>EXPIRED</code> and buyer is refunded. This hard cutoff prevents
+                            zombie transactions.</div>
+                    </div>
+                </div>
+
+                <div class="h2">Technical implementation</div>
+                <div class="code-block">
+                    <span class="cm">// src/services/dispatcher/holdWindow.ts</span>
+
+                    <span class="ck">interface</span> <span class="cs">DispatcherScore</span> {
+                    dispatcherId: <span class="cv">string</span>;
+                    routeOverlap: <span class="cv">number</span>; <span class="cm">// 0-1</span>
+                    reputationScore: <span class="cv">number</span>; <span class="cm">// 300-1000</span>
+                    etaMinutes: <span class="cv">number</span>;
+                    acceptanceRate: <span class="cv">number</span>; <span class="cm">// 0-1</span>
+                    composite: <span class="cv">number</span>; <span class="cm">// weighted total</span>
+                    }
+
+                    <span class="ck">const</span> WEIGHTS = {
+                    routeOverlap: <span class="cv">0.35</span>,
+                    reputationScore: <span class="cv">0.25</span>,
+                    etaMinutes: <span class="cv">0.25</span>,
+                    acceptanceRate: <span class="cv">0.15</span>,
+                    };
+
+                    <span class="ck">const</span> <span class="cs">HOLD_WINDOW_MS</span> = <span class="cv">45 * 60 *
+                        1000</span>;
+                    <span class="ck">const</span> <span class="cs">SCORE_INTERVAL</span> = <span class="cv">90 *
+                        1000</span>; <span class="cm">// re-score every 90s</span>
+                    <span class="ck">const</span> <span class="cs">MIN_THRESHOLD</span> = <span class="cv">0.65</span>;
+                    <span class="cm">// assign early if score ≥ 0.65</span>
+
+                    <span class="ck">async function</span> <span class="cs">startHoldWindow</span>(transactionId: <span
+                        class="cv">string</span>) {
+                    <span class="cm">// Store in Redis with 45min expiry</span>
+                    <span class="ck">await</span> redis.set(
+                    <span class="cn">`hold:${transactionId}`</span>,
+                    <span class="cn">'active'</span>,
+                    <span class="cn">'PX'</span>, HOLD_WINDOW_MS
+                    );
+
+                    <span class="cm">// BullMQ job: score loop + hard deadline</span>
+                    <span class="ck">await</span> dispatchQueue.add(<span class="cn">'scoreLoop'</span>, { transactionId
+                    }, {
+                    repeat: { every: SCORE_INTERVAL },
+                    jobId: <span class="cn">`score-${transactionId}`</span>,
+                    });
+                    <span class="ck">await</span> dispatchQueue.add(<span class="cn">'hardAssign'</span>, {
+                    transactionId }, {
+                    delay: HOLD_WINDOW_MS,
+                    jobId: <span class="cn">`assign-${transactionId}`</span>,
+                    });
+                    }
+                </div>
+
+                <div class="h2">Why Redis + BullMQ</div>
+                <div class="card-grid">
+                    <div class="card">
+                        <div class="card-label">Redis TTL</div>
+                        <div class="card-title">The hold window clock</div>
+                        <div class="card-body">Redis TTL keys act as the canonical timer. If the server restarts, the
+                            TTL is still ticking. No in-memory timers that vanish on crash.</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-label">BullMQ</div>
+                        <div class="card-title">The scoring loop</div>
+                        <div class="card-body">Repeating jobs every 90 seconds. The hard-assign job fires at T=45:00
+                            regardless of what else is happening. Retryable, observable, monitorable.</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-label">Geospatial</div>
+                        <div class="card-title">Route overlap scoring</div>
+                        <div class="card-body">Redis GEOADD + GEORADIUS for dispatcher proximity. Route overlap
+                            calculated against declared origin-destination. This is the critical scoring signal.</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SYSTEM LAYERS -->
+            <section class="section" id="layers">
+                <div class="section-eyebrow">System architecture</div>
+                <h2 class="section-title">Five <span>system layers.</span></h2>
+
+                <div class="layer-stack">
+                    <div class="layer" style="background:rgba(0,212,160,.06);border-color:rgba(0,212,160,.2)">
+                        <div class="layer-name" style="color:var(--teal)">Channel layer</div>
+                        <div class="layer-items">
+                            <span>Mobile app (Expo)</span>
+                            <span>Web app (Next.js)</span>
+                            <span>USSD</span>
+                            <span>API integrations</span>
+                        </div>
+                    </div>
+                    <div class="layer" style="background:rgba(59,158,255,.06);border-color:rgba(59,158,255,.2)">
+                        <div class="layer-name" style="color:var(--blue)">Service layer</div>
+                        <div class="layer-items">
+                            <span>Auth</span>
+                            <span>Escrow</span>
+                            <span>Payment</span>
+                            <span>Dispatcher</span>
+                            <span>Notification</span>
+                            <span>Reputation</span>
+                            <span>Dispute</span>
+                            <span>Real estate</span>
+                        </div>
+                    </div>
+                    <div class="layer" style="background:rgba(183,127,255,.06);border-color:rgba(183,127,255,.2)">
+                        <div class="layer-name" style="color:var(--purple)">Data layer</div>
+                        <div class="layer-items">
+                            <span>PostgreSQL (Supabase)</span>
+                            <span>Redis (cache + queues)</span>
+                            <span>Object storage</span>
+                            <span>Audit logs</span>
+                        </div>
+                    </div>
+                    <div class="layer" style="background:rgba(255,209,102,.05);border-color:rgba(255,209,102,.2)">
+                        <div class="layer-name" style="color:var(--gold)">Infrastructure layer</div>
+                        <div class="layer-items">
+                            <span>Railway (backend)</span>
+                            <span>Vercel (frontend)</span>
+                            <span>BullMQ (queues)</span>
+                            <span>Docker</span>
+                            <span>CI/CD</span>
+                        </div>
+                    </div>
+                    <div class="layer" style="background:rgba(226,75,74,.05);border-color:rgba(226,75,74,.2)">
+                        <div class="layer-name" style="color:var(--coral)">Trust layer</div>
+                        <div class="layer-items">
+                            <span>Identity verification</span>
+                            <span>Escrow controls</span>
+                            <span>Audit trails</span>
+                            <span>Fraud detection</span>
+                            <span>Reputation scoring</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SERVICES -->
+            <section class="section" id="services">
+                <div class="section-eyebrow">Service layer</div>
+                <h2 class="section-title">Core <span>services.</span></h2>
+
+                <div class="service-grid">
+                    <div class="service-card" style="--svc-color:var(--teal)">
+                        <div class="service-name">Auth service</div>
+                        <div class="service-desc">JWT, refresh tokens, BVN/NIN verification, device binding</div>
+                    </div>
+                    <div class="service-card" style="--svc-color:var(--teal)">
+                        <div class="service-name">User service</div>
+                        <div class="service-desc">Profile, KYC status, tier management, preferences</div>
+                    </div>
+                    <div class="service-card" style="--svc-color:var(--blue)">
+                        <div class="service-name">Escrow service</div>
+                        <div class="service-desc">State machine, transition validation, audit log</div>
+                    </div>
+                    <div class="service-card" style="--svc-color:var(--blue)">
+                        <div class="service-name">Payment service</div>
+                        <div class="service-desc">Paystack integration, webhook handling, kobo amounts, payouts</div>
+                    </div>
+                    <div class="service-card" style="--svc-color:var(--gold)">
+                        <div class="service-name">Package service</div>
+                        <div class="service-desc">Package creation, metadata, photos, value declaration</div>
+                    </div>
+                    <div class="service-card" style="--svc-color:var(--gold)">
+                        <div class="service-name">Dispatcher service</div>
+                        <div class="service-desc">Hold window, scoring algorithm, route matching, GPS tracking</div>
+                    </div>
+                    <div class="service-card" style="--svc-color:var(--purple)">
+                        <div class="service-name">Notification service</div>
+                        <div class="service-desc">Push (Expo), SMS, email. Every state transition fires a notification.
+                        </div>
+                    </div>
+                    <div class="service-card" style="--svc-color:var(--purple)">
+                        <div class="service-name">Reputation service</div>
+                        <div class="service-desc">Score calculation, tier assignment, decay engine, boost events</div>
+                    </div>
+                    <div class="service-card" style="--svc-color:var(--coral)">
+                        <div class="service-name">Dispute service</div>
+                        <div class="service-desc">Evidence collection, 72hr SLA, admin resolution, partial release</div>
+                    </div>
+                    <div class="service-card" style="--svc-color:var(--coral)">
+                        <div class="service-name">Real estate service</div>
+                        <div class="service-desc">Property escrow, milestone definitions, inspection verification</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- DATA MODEL -->
+            <section class="section" id="datamodel">
+                <div class="section-eyebrow">Data layer</div>
+                <h2 class="section-title">Core <span>data models.</span></h2>
+                <p class="section-lead">Design the schema to support all six phases from day one. Fields used only in
+                    Phase 2+ can be nullable — but they must exist so Phase 2 never requires a breaking migration.</p>
+
+                <div class="h2">Key Prisma models</div>
+
+                <div class="code-block">
+                    <span class="cm">// prisma/schema.prisma — core models (abridged)</span>
+
+                    <span class="ck">model</span> <span class="cs">User</span> {
+                    id <span class="cv">String</span> @id @default(uuid())
+                    email <span class="cv">String</span> @unique
+                    phone <span class="cv">String</span>? @unique
+                    bvnVerified <span class="cv">Boolean</span> @default(false)
+                    ninVerified <span class="cv">Boolean</span> @default(false)
+                    reputationScore <span class="cv">Int</span> @default(500)
+                    tier <span class="cv">UserTier</span> @default(NEW)
+                    role <span class="cv">Role</span> @default(USER)
+                    transactions <span class="cs">Transaction</span>[]
+                    createdAt <span class="cv">DateTime</span> @default(now())
+                    }
+
+                    <span class="ck">model</span> <span class="cs">Transaction</span> {
+                    id <span class="cv">String</span> @id @default(uuid())
+                    buyerId <span class="cv">String</span>
+                    sellerId <span class="cv">String</span>
+                    amountKobo <span class="cv">Int</span> <span class="cm">// NEVER floats. kobo only.</span>
+                    state <span class="cv">TransactionState</span> @default(CREATED)
+                    vertical <span class="cv">Vertical</span> @default(COMMERCE)
+
+                    <span class="cm">// Phase 2 fields — nullable until dispatcher network launches</span>
+                    packageDetails <span class="cs">Json</span>?
+                    pickupAddress <span class="cv">String</span>?
+                    deliveryAddress <span class="cv">String</span>?
+                    dispatcherId <span class="cv">String</span>?
+
+                    <span class="cm">// Phase 3 fields</span>
+                    propertyId <span class="cv">String</span>?
+                    milestones <span class="cs">Milestone</span>[]
+
+                    auditLog <span class="cs">AuditEvent</span>[]
+                    dispute <span class="cs">Dispute</span>?
+                    paystackRef <span class="cv">String</span>? @unique
+                    expiresAt <span class="cv">DateTime</span>?
+                    createdAt <span class="cv">DateTime</span> @default(now())
+                    updatedAt <span class="cv">DateTime</span> @updatedAt
+                    }
+
+                    <span class="ck">enum</span> <span class="cs">TransactionState</span> {
+                    CREATED FUNDED MATCHING_DISPATCHER ASSIGNED
+                    PICKED_UP IN_TRANSIT ARRIVED CONFIRMED
+                    RELEASED DISPUTED CANCELLED EXPIRED
+                    }
+                </div>
+
+                <div class="callout insight">
+                    <strong>Amount rule:</strong> All monetary values are stored in kobo (₦1 = 100 kobo). Never store or
+                    calculate with floats. A transaction for ₦5,000 is stored as <code>amountKobo: 500000</code>. The
+                    formatting layer converts to display. This prevents every floating-point rounding error in financial
+                    history.
+                </div>
+            </section>
+
+            <!-- BACKEND STRUCTURE -->
+            <section class="section" id="backend">
+                <div class="section-eyebrow">Backend</div>
+                <h2 class="section-title">Express + TypeScript <span>file structure.</span></h2>
+
+                <div class="file-tree">
+                    <span class="ft-dir">payhold-backend/</span>
+                    ├── <span class="ft-dir">src/</span>
+                    │ ├── <span class="ft-new">index.ts</span> <span class="ft-comment">← server entry, graceful
+                        shutdown</span>
+                    │ ├── <span class="ft-new">app.ts</span> <span class="ft-comment">← express app, middleware,
+                        routes</span>
+                    │ │
+                    │ ├── <span class="ft-dir">config/</span>
+                    │ │ ├── <span class="ft-new">env.ts</span> <span class="ft-comment">← zod env validation (crash on
+                        bad env)</span>
+                    │ │ ├── <span class="ft-new">logger.ts</span> <span class="ft-comment">← winston, dev coloured /
+                        prod JSON</span>
+                    │ │ └── <span class="ft-file">database.ts</span> <span class="ft-comment">← prisma client
+                        singleton</span>
+                    │ │
+                    │ ├── <span class="ft-dir">middleware/</span>
+                    │ │ ├── <span class="ft-new">errorHandler.ts</span> <span class="ft-comment">← global error handler
+                        + AppError classes</span>
+                    │ │ ├── <span class="ft-new">rateLimiter.ts</span> <span class="ft-comment">← auth (10/15m) · api
+                        (100/15m) · payment</span>
+                    │ │ ├── <span class="ft-new">validate.ts</span> <span class="ft-comment">← zod body/params/query
+                        validation</span>
+                    │ │ └── <span class="ft-file">auth.ts</span> <span class="ft-comment">← JWT verify middleware</span>
+                    │ │
+                    │ ├── <span class="ft-dir">routes/</span>
+                    │ │ ├── <span class="ft-new">health.ts</span> <span class="ft-comment">← GET /api/health</span>
+                    │ │ ├── <span class="ft-file">auth.ts</span> <span class="ft-comment">← register, login, refresh,
+                        logout</span>
+                    │ │ ├── <span class="ft-file">transactions.ts</span> <span class="ft-comment">← CRUD + state
+                        transitions</span>
+                    │ │ ├── <span class="ft-file">disputes.ts</span> <span class="ft-comment">← raise, evidence,
+                        resolve</span>
+                    │ │ ├── <span class="ft-file">dispatchers.ts</span> <span class="ft-comment">← Phase 2: accept,
+                        track, score</span>
+                    │ │ └── <span class="ft-file">webhooks.ts</span> <span class="ft-comment">← Paystack webhooks (no
+                        auth)</span>
+                    │ │
+                    │ ├── <span class="ft-dir">services/</span>
+                    │ │ ├── <span class="ft-dir">escrow/</span>
+                    │ │ │ ├── <span class="ft-file">stateMachine.ts</span> <span class="ft-comment">← THE heart of
+                        PayHold</span>
+                    │ │ │ └── <span class="ft-file">auditLog.ts</span> <span class="ft-comment">← immutable audit trail
+                        writer</span>
+                    │ │ ├── <span class="ft-dir">payment/</span>
+                    │ │ │ ├── <span class="ft-file">paystack.ts</span> <span class="ft-comment">← initialize, verify,
+                        transfer</span>
+                    │ │ │ └── <span class="ft-file">webhook.ts</span> <span class="ft-comment">← signature verify,
+                        idempotency</span>
+                    │ │ ├── <span class="ft-dir">dispatcher/</span>
+                    │ │ │ ├── <span class="ft-file">holdWindow.ts</span> <span class="ft-comment">← 45-min window, Redis
+                        TTL</span>
+                    │ │ │ ├── <span class="ft-file">scoring.ts</span> <span class="ft-comment">← composite score
+                        algorithm</span>
+                    │ │ │ └── <span class="ft-file">geo.ts</span> <span class="ft-comment">← Redis GEOADD, route
+                        overlap</span>
+                    │ │ ├── <span class="ft-dir">reputation/</span>
+                    │ │ │ ├── <span class="ft-file">scorer.ts</span> <span class="ft-comment">← event-driven score
+                        updates</span>
+                    │ │ │ └── <span class="ft-file">decay.ts</span> <span class="ft-comment">← monthly decay cron
+                        job</span>
+                    │ │ └── <span class="ft-dir">notification/</span>
+                    │ │ ├── <span class="ft-file">push.ts</span> <span class="ft-comment">← Expo push
+                        notifications</span>
+                    │ │ └── <span class="ft-file">sms.ts</span> <span class="ft-comment">← Termii / Africa's
+                        Talking</span>
+                    │ │
+                    │ ├── <span class="ft-dir">types/</span>
+                    │ │ ├── <span class="ft-new">api.ts</span> <span class="ft-comment">← ApiResponse envelope,
+                        sendSuccess/Error</span>
+                    │ │ └── <span class="ft-file">express.d.ts</span> <span class="ft-comment">← req.user type
+                        augmentation</span>
+                    │ │
+                    │ └── <span class="ft-dir">utils/</span>
+                    │ ├── <span class="ft-file">kobo.ts</span> <span class="ft-comment">← toKobo(), fromKobo(),
+                        formatNaira()</span>
+                    │ └── <span class="ft-file">asyncHandler.ts</span> <span class="ft-comment">← eliminates try/catch
+                        in controllers</span>
+                    │
+                    ├── <span class="ft-dir">prisma/</span>
+                    │ ├── <span class="ft-file">schema.prisma</span>
+                    │ └── <span class="ft-dir">migrations/</span>
+                    │
+                    ├── <span class="ft-new">package.json</span>
+                    ├── <span class="ft-new">tsconfig.json</span>
+                    ├── <span class="ft-file">.env.example</span>
+                    └── <span class="ft-file">railway.toml</span>
+
+                    <span class="ft-comment">── Green = already built · White = build next ──</span>
+                </div>
+
+                <div class="h2">Build order — Layer by Layer</div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Layer</th>
+                            <th>Files</th>
+                            <th>Unblocks</th>
+                            <th>When</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1 — Foundation</td>
+                            <td><code>index.ts</code> · <code>app.ts</code> · <code>env.ts</code> ·
+                                <code>logger.ts</code>
+                            </td>
+                            <td>Everything</td>
+                            <td><span class="tag">Done</span></td>
+                        </tr>
+                        <tr>
+                            <td>2 — Auth</td>
+                            <td><code>routes/auth.ts</code> · <code>middleware/auth.ts</code></td>
+                            <td>Mobile login</td>
+                            <td>This week</td>
+                        </tr>
+                        <tr>
+                            <td>3 — Escrow state machine</td>
+                            <td><code>services/escrow/stateMachine.ts</code></td>
+                            <td>All transactions</td>
+                            <td>Week 2</td>
+                        </tr>
+                        <tr>
+                            <td>4 — Transactions API</td>
+                            <td><code>routes/transactions.ts</code></td>
+                            <td>Mobile app flow</td>
+                            <td>Week 2–3</td>
+                        </tr>
+                        <tr>
+                            <td>5 — Payments</td>
+                            <td><code>services/payment/paystack.ts</code> · <code>webhook.ts</code></td>
+                            <td>Real money</td>
+                            <td>Week 3–4</td>
+                        </tr>
+                        <tr>
+                            <td>6 — Disputes</td>
+                            <td><code>routes/disputes.ts</code> + service</td>
+                            <td>Admin resolution</td>
+                            <td>Week 4–5</td>
+                        </tr>
+                        <tr>
+                            <td>7 — Dispatcher</td>
+                            <td><code>services/dispatcher/*</code></td>
+                            <td>Phase 2</td>
+                            <td>Month 2</td>
+                        </tr>
+                        <tr>
+                            <td>8 — Reputation</td>
+                            <td><code>services/reputation/*</code></td>
+                            <td>Trust scores</td>
+                            <td>Month 2</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- REPUTATION SYSTEM -->
+            <section class="section" id="reputation">
+                <div class="section-eyebrow">Trust scoring</div>
+                <h2 class="section-title">The reputation <span>engine.</span></h2>
+                <p class="section-lead">PayHold's most defensible long-term asset. Every transaction scores buyers,
+                    sellers, and dispatchers. Scores compound over time — a new entrant starts at 500, an active user
+                    builds to 1000.</p>
+
+                <div class="h2">Three separate score identities</div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Role</th>
+                            <th>Top signal</th>
+                            <th>Decay</th>
+                            <th>Suspension threshold</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Buyer</strong></td>
+                            <td>Transaction completion (30%) · Release speed (25%)</td>
+                            <td>2pts/month inactive</td>
+                            <td>Below 300</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Seller</strong></td>
+                            <td>Fulfilment rate (35%) · Dispute outcomes (25%)</td>
+                            <td>3pts/month inactive</td>
+                            <td>Below 300 → manual review</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Dispatcher</strong></td>
+                            <td>On-time delivery (35%) · Package integrity (30%)</td>
+                            <td>5pts/week inactive</td>
+                            <td>Below 400 → removed from pool</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="h2">Tier thresholds</div>
+
+                <div class="card-grid-3">
+                    <div class="card" style="border-color:rgba(226,75,74,.3)">
+                        <div class="card-label" style="color:var(--red)">New — 300 to 499</div>
+                        <div class="card-title">Restricted access</div>
+                        <div class="card-body">Escrow creation blocked. Can browse but not transact. Complete identity
+                            verification to unlock 500+.</div>
+                    </div>
+                    <div class="card" style="border-color:rgba(255,209,102,.3)">
+                        <div class="card-label" style="color:var(--gold)">Verified — 500 to 699</div>
+                        <div class="card-title">Standard access</div>
+                        <div class="card-body">Escrow creation enabled. Standard limits and 72hr dispute SLA.</div>
+                    </div>
+                    <div class="card" style="border-color:rgba(0,212,160,.3)">
+                        <div class="card-label" style="color:var(--teal)">Trusted — 700 to 849</div>
+                        <div class="card-title">Priority access</div>
+                        <div class="card-body">Higher limits, 3-day→1-day hold period, 24hr dispute SLA, real estate
+                            escrow access.</div>
+                    </div>
+                </div>
+
+                <div class="callout insight">
+                    <strong>The 850+ unlock matters for Phase 5:</strong> API access for B2B integrations requires
+                    elite-tier status. This creates a natural quality filter — only verified, high-volume, low-dispute
+                    actors become API partners. The trust system gates the business model.
+                </div>
+
+                <div class="h2">Implementation: event-driven scoring</div>
+                <div class="code-block">
+                    <span class="cm">// services/reputation/scorer.ts</span>
+                    <span class="cm">// Every domain event triggers a score update — never called directly</span>
+
+                    <span class="ck">const</span> SCORE_EVENTS = {
+                    <span class="cm">// Buyer boost events</span>
+                    <span class="cn">'buyer.confirmed_receipt'</span>: <span class="cv">+8</span>,
+                    <span class="cn">'buyer.completed_transaction'</span>: <span class="cv">+5</span>,
+                    <span class="cn">'buyer.identity_upgraded'</span>: <span class="cv">+15</span>, <span class="cm">//
+                        one-time</span>
+
+                    <span class="cm">// Buyer penalty events</span>
+                    <span class="cn">'buyer.frivolous_dispute'</span>: <span class="cv">-12</span>,
+                    <span class="cn">'buyer.late_confirmation'</span>: <span class="cv">-5</span>,
+                    <span class="cn">'buyer.payment_bounced'</span>: <span class="cv">-20</span>,
+
+                    <span class="cm">// Seller boost events</span>
+                    <span class="cn">'seller.buyer_confirmed'</span>: <span class="cv">+6</span>,
+                    <span class="cn">'seller.five_star_rating'</span>: <span class="cv">+10</span>,
+                    <span class="cn">'seller.cac_registered'</span>: <span class="cv">+20</span>, <span class="cm">//
+                        one-time</span>
+
+                    <span class="cm">// Dispatcher boost events</span>
+                    <span class="cn">'dispatcher.early_delivery'</span>: <span class="cv">+8</span>,
+                    <span class="cn">'dispatcher.five_star'</span>: <span class="cv">+12</span>,
+                    <span class="cn">'dispatcher.package_damaged'</span>: <span class="cv">-30</span>,
+                    <span class="cn">'dispatcher.route_deviated'</span>: <span class="cv">-15</span>,
+                    } <span class="ck">as const</span>;
+                </div>
+            </section>
+
+            <!-- ROADMAP -->
+            <section class="section" id="roadmap">
+                <div class="section-eyebrow">Build plan</div>
+                <h2 class="section-title">Week-by-week <span>roadmap.</span></h2>
+
+                <div class="timeline">
+                    <div class="timeline-item" style="--tl-color:var(--teal)">
+                        <div class="tl-label">Week 1 — Now</div>
+                        <div class="tl-title">Auth layer complete</div>
+                        <div class="tl-body">JWT register/login/refresh. Auth middleware. Mobile app connects to real
+                            endpoints. Dummy data replaced with database calls for auth screens.</div>
+                    </div>
+                    <div class="timeline-item" style="--tl-color:var(--teal)">
+                        <div class="tl-label">Week 2–3</div>
+                        <div class="tl-title">Escrow state machine + transactions API</div>
+                        <div class="tl-body">The state machine is the most important code in the entire codebase. Build
+                            it slowly. Every transition tested. Every audit log verified. The create-transaction screen
+                            goes live.</div>
+                    </div>
+                    <div class="timeline-item" style="--tl-color:var(--blue)">
+                        <div class="tl-label">Week 3–4</div>
+                        <div class="tl-title">Paystack integration</div>
+                        <div class="tl-body">Initialize payment, verify webhook signature, fund escrow. Kobo amounts
+                            everywhere. Test mode first — real money only after 50+ test transactions are clean.</div>
+                    </div>
+                    <div class="timeline-item" style="--tl-color:var(--blue)">
+                        <div class="tl-label">Week 4–5</div>
+                        <div class="tl-title">Disputes + admin resolution</div>
+                        <div class="tl-body">Dispute raising, evidence upload (S3/Supabase storage), 72hr SLA timer via
+                            BullMQ, admin dashboard for resolution, partial fund release.</div>
+                    </div>
+                    <div class="timeline-item" style="--tl-color:var(--gold)">
+                        <div class="tl-label">Month 2</div>
+                        <div class="tl-title">Reputation engine + notifications</div>
+                        <div class="tl-body">Event-driven scoring. Decay cron. Tier assignment. Expo push notifications
+                            for every state transition. SMS fallback via Termii.</div>
+                    </div>
+                    <div class="timeline-item" style="--tl-color:var(--purple)">
+                        <div class="tl-label">Month 2–3</div>
+                        <div class="tl-title">Phase 1 MVP complete — launch</div>
+                        <div class="tl-body">Full commerce escrow cycle working end-to-end. Real transactions. Real
+                            money. Real trust. 1,000 transactions before Phase 2 planning begins.</div>
+                    </div>
+                    <div class="timeline-item" style="--tl-color:var(--coral)">
+                        <div class="tl-label">Month 3+</div>
+                        <div class="tl-title">Phase 2 — Dispatcher network</div>
+                        <div class="tl-body">Redis geospatial. BullMQ hold window. Scoring algorithm. Dispatcher mobile
+                            app. Route liquidity engine. The movement marketplace begins.</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- KEY DECISIONS -->
+            <section class="section" id="decisions">
+                <div class="section-eyebrow">Architecture decisions</div>
+                <h2 class="section-title">What we decided <span>and why.</span></h2>
+
+                <div class="decision-row">
+                    <div class="decision-icon yes">✓</div>
+                    <div class="decision-text"><strong>Kobo-only amounts:</strong> All monetary values stored as
+                        integers in kobo. No floats anywhere in the codebase. A ₦5,000 transaction is 500000 kobo.
+                        Prevents every floating-point rounding error in financial history.</div>
+                </div>
+                <div class="decision-row">
+                    <div class="decision-icon yes">✓</div>
+                    <div class="decision-text"><strong>Monolithic first, microservices later:</strong> Start with a
+                        single Express app. Extract services to microservices only when a specific scaling bottleneck
+                        demands it. Premature microservices kill early-stage teams.</div>
+                </div>
+                <div class="decision-row">
+                    <div class="decision-icon yes">✓</div>
+                    <div class="decision-text"><strong>AsyncStorage for MVP, Paystack deferred:</strong> Mobile app uses
+                        AsyncStorage for Phase 1 MVP. Paystack on mobile integrated after the backend payment flow is
+                        stable and tested.</div>
+                </div>
+                <div class="decision-row">
+                    <div class="decision-icon yes">✓</div>
+                    <div class="decision-text"><strong>Schema supports all phases from day one:</strong> Prisma schema
+                        includes nullable Phase 2+ fields. No breaking migrations when Phase 2 launches. Plan the data
+                        model for the 5-year vision, build the features in sequence.</div>
+                </div>
+                <div class="decision-row">
+                    <div class="decision-icon warn">!</div>
+                    <div class="decision-text"><strong>BullMQ + Redis required for Phase 2:</strong> The hold window
+                        needs persistent timers (Redis TTL) and retryable job queues (BullMQ). Add Redis to Railway
+                        before beginning Phase 2 work. Do not attempt the hold window with in-memory timers — they
+                        vanish on restart.</div>
+                </div>
+                <div class="decision-row">
+                    <div class="decision-icon no">✗</div>
+                    <div class="decision-text"><strong>No blockchain for vaults:</strong> PayHold Vaults are
+                        programmable custody on fiat rails, not smart contracts. Blockchain adds complexity, regulatory
+                        friction, and UX barriers without adding meaningful trust guarantees that a well-audited
+                        database state machine doesn't already provide.</div>
+                </div>
+                <div class="decision-row">
+                    <div class="decision-icon no">✗</div>
+                    <div class="decision-text"><strong>No dispatcher UI in Phase 1:</strong> The dispatcher network
+                        (Phase 2) is not touched until Phase 1 has 1,000 active transactions. Route density requires
+                        transaction volume. Transaction volume requires Phase 1 to be solid.</div>
+                </div>
+            </section>
+
+            <!-- TECH STACK -->
+            <section class="section" id="stack">
+                <div class="section-eyebrow">Technology</div>
+                <h2 class="section-title">The <span>tech stack.</span></h2>
+
+                <div class="card-grid">
+                    <div class="card">
+                        <div class="card-label">Mobile</div>
+                        <div class="card-title">React Native + Expo Router</div>
+                        <div class="card-body">File-based routing. Tab navigator. AsyncStorage for MVP. Background:
+                            <code>#060E1C</code>, card: <code>#0D1B2E</code>, accent: <code>#00D4A0</code>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-label">Web frontend</div>
+                        <div class="card-title">Next.js on Vercel</div>
+                        <div class="card-body">App router. NextAuth for web auth. Server components for SEO. Tailwind
+                            CSS. Deployed on Vercel.</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-label">Backend</div>
+                        <div class="card-title">Express + TypeScript</div>
+                        <div class="card-body">Strict TypeScript. Zod validation. Winston logging. asyncHandler pattern.
+                            Deployed on Railway.</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-label">Database</div>
+                        <div class="card-title">PostgreSQL via Prisma</div>
+                        <div class="card-body">Supabase-hosted PostgreSQL. Prisma v6 ORM. Migration-based schema
+                            evolution. Audit log table append-only.</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-label">Cache + queues</div>
+                        <div class="card-title">Redis + BullMQ</div>
+                        <div class="card-body">Redis for session cache, geospatial (Phase 2), TTL hold windows. BullMQ
+                            for job queues, retry logic, cron jobs.</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-label">Payments</div>
+                        <div class="card-title">Paystack</div>
+                        <div class="card-body">Initialize, verify, transfer. Kobo amounts. Webhook signature
+                            verification. Split payments for marketplace model.</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-label">Notifications</div>
+                        <div class="card-title">Expo Push + Termii</div>
+                        <div class="card-body">Expo for in-app push. Termii for SMS. Every state transition fires a
+                            notification. Email via Resend or Sendgrid.</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-label">Auth</div>
+                        <div class="card-title">JWT + BVN/NIN</div>
+                        <div class="card-body">Access token (7d) + refresh token (30d). BVN/NIN verification via NIBSS
+                            or third-party. Device binding for mobile.</div>
+                    </div>
+                </div>
+
+                <div class="callout insight" style="margin-top:8px">
+                    <strong>The sequencing principle:</strong> Phase 1 needs Express + Postgres + Paystack + JWT. That
+                    is all. Redis and BullMQ are Phase 2 prerequisites — add them to Railway before Phase 2 begins, not
+                    before. Every piece of infrastructure you run before you need it is complexity that slows Phase 1.
+                </div>
+            </section>
+
+            <!-- FOOTER -->
+            <div
+                style="margin-top:80px;padding-top:40px;border-top:1px solid var(--ink-border);display:flex;align-items:center;justify-content:space-between;flex-wrap:gap;gap:16px">
+                <div>
+                    <div style="font-family:var(--font-display);font-size:18px;font-weight:800;color:var(--teal)">
+                        PayHold</div>
+                    <div style="font-size:12px;color:var(--text-3);margin-top:2px">Africa's trust infrastructure layer —
+                        Internal architecture document v1.0</div>
+                </div>
+                <div style="font-size:12px;color:var(--text-3);font-family:var(--font-mono)">Built in Abuja, Nigeria
+                </div>
+            </div>
+
+        </div><!-- /content -->
+    </main><!-- /main -->
+
+    <script>
+        /* ── State machine data ── */
+        const states = [
+            { name: 'Created', trigger: 'Buyer initiates transaction', next: 'Funded · Cancelled · Expired', event: 'transaction.created', desc: 'Agreement exists in the database. No money has moved. The 45-minute expiry clock starts here if the buyer does not fund. PayHold does not commit resources until Funded.' },
+            { name: 'Funded', trigger: 'Paystack webhook confirms payment', next: 'Matching dispatcher · Disputed', event: 'transaction.funded', desc: "Buyer's money is held by PayHold. This is the moment trust is established — the seller can now be confident payment exists. Notification fires to seller. The escrow hold is real." },
+            { name: 'Matching dispatcher', trigger: 'Auto after Funded (Phase 2)', next: 'Assigned · Expired', event: 'dispatcher.matching_started', desc: 'The 45-minute hold window. The route liquidity engine scans nearby dispatchers, evaluates movement patterns, and searches for optimal matches. Phase 1 skips this state — it activates in Phase 2.' },
+            { name: 'Assigned', trigger: 'Dispatcher accepts the job', next: 'Picked up · Cancelled', event: 'dispatcher.assigned', desc: 'A specific dispatcher has committed. Their reputation score, route history, and movement are logged. Both buyer and seller are notified with dispatcher details.' },
+            { name: 'Picked up', trigger: 'Dispatcher confirms collection', next: 'In transit', event: 'package.picked_up', desc: 'Physical proof of collection. GPS coordinates logged. Timestamp immutable. Seller confirms handoff. The first physical-to-digital trust bridge — the real world enters the state machine.' },
+            { name: 'In transit', trigger: 'Auto after pickup confirmation', next: 'Arrived · Disputed', event: 'package.in_transit', desc: 'Package is moving. Real-time location tracking active. Estimated arrival computed from route data. If dispatcher deviates or goes offline, an alert fires.' },
+            { name: 'Arrived', trigger: 'Dispatcher marks delivery complete', next: 'Confirmed · Disputed', event: 'package.arrived', desc: 'Dispatcher claims delivery. A confirmation window opens for the buyer — typically 2–4 hours. If the buyer does not respond, auto-confirm logic applies based on platform rules.' },
+            { name: 'Confirmed', trigger: 'Buyer confirms receipt', next: 'Released · Disputed', event: 'buyer.confirmed', desc: 'Buyer is satisfied. Maximum trust moment — the entire transaction worked as promised. Release is now authorised. Both parties reputation scores update positively.' },
+            { name: 'Released', trigger: 'PayHold releases funds to seller', next: '— (terminal)', event: 'payment.released', desc: 'Terminal success state. Funds transfer to seller via Paystack. Audit trail sealed. Reputation scores finalised. One more trust data point in the network.' },
+            { name: 'Disputed', trigger: 'Either party raises a dispute', next: 'Released · Cancelled', event: 'dispute.raised', desc: 'Trust has broken down. Evidence is collected, 72-hour SLA clock starts, admin reviews. Funds locked until resolution. Partial release is possible. Every dispute is a product improvement signal.' },
+            { name: 'Cancelled', trigger: 'Either party cancels before pickup', next: '— (terminal)', event: 'transaction.cancelled', desc: 'Terminal exit before physical handoff. Refund initiated to buyer. Reputation impact depends on who cancelled and at what stage. Cancellation after assignment penalises the cancelling party.' },
+            { name: 'Expired', trigger: 'Auto: timeout with no action', next: '— (terminal)', event: 'transaction.expired', desc: 'Buyer never funded, or matching window closed with no dispatcher. Funds refunded if already paid. Prevents zombie transactions from clogging the system.' },
+        ];
+
+        let activeState = 0;
+
+        function showState(i) {
+            activeState = i;
+            const s = states[i];
+            document.getElementById('sd-name').textContent = s.name;
+            document.getElementById('sd-trigger').textContent = s.trigger;
+            document.getElementById('sd-next').textContent = s.next;
+            document.getElementById('sd-event').textContent = s.event;
+            document.getElementById('sd-desc').textContent = s.desc;
+            document.querySelectorAll('.state-pill').forEach((p, j) => p.classList.toggle('active', j === i));
+        }
+
+        showState(0);
+
+        /* ── Scroll progress + active nav ── */
+        const sections = document.querySelectorAll('.section, .hero');
+        const navItems = document.querySelectorAll('.nav-item');
+
+        function onScroll() {
+            const pct = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
+            document.getElementById('spfill').style.width = Math.min(pct, 100) + '%';
+
+            let current = '';
+            sections.forEach(s => {
+                if (window.scrollY >= s.offsetTop - 120) current = s.id;
+            });
+
+            navItems.forEach(item => {
+                const href = item.getAttribute('href');
+                item.classList.toggle('active', href === '#' + current);
+            });
+        }
+
+        window.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
+    </script>
+</body>
+
+</html>

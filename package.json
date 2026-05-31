@@ -1,0 +1,25 @@
+{
+  "dependencies": {
+    "react-app": "^1.1.2"
+  },
+  "name": "payhold-biulders-structure",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/21stD3v/payhold-biulders-structure.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/21stD3v/payhold-biulders-structure/issues"
+  },
+  "homepage": "https://github.com/21stD3v/payhold-biulders-structure#readme"
+}
